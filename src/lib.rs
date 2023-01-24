@@ -16,7 +16,7 @@ pub struct Node<T: Clone> {
 impl<T: NodeBuilder + Clone> Node<T> {
     pub fn new(data: T) -> Node<T> {
         let key = data.build_node_key();
-        let parent_keys = data.build_child_key();
+        let parent_keys = data.build_parent_key();
         let child_keys = data.build_child_key();
         Node { data, key, parent_keys, child_keys, has_circular_ref: false}
     }
@@ -35,10 +35,12 @@ pub struct Tree<T: NodeBuilder + Clone> {
 }
 
 impl<T: NodeBuilder + Clone> Tree<T> {
-    pub fn new(&mut self, data: Vec<T>) -> Tree<T> {
-        let nodes = self.build_nodes(data);
-        self.check_circular_ref();
-        Tree {nodes, has_circular_ref: false}
+    pub fn new(data: Vec<T>) -> Tree<T> {
+        let nodes: Vec<Node<T>> = Vec::new();
+        let mut tree = Tree {nodes, has_circular_ref: false};
+        tree.check_circular_ref();
+        tree.build_nodes(data);
+        return tree;
     }
     pub fn get_root_nodes(&self) -> Vec<Node<T>> {
         self.nodes
@@ -91,12 +93,12 @@ impl<T: NodeBuilder + Clone> Tree<T> {
             .cloned()
             .collect()
     }
-    fn build_nodes(&self, data: Vec<T>) -> Vec<Node<T>> {
+    fn build_nodes(&mut self, data: Vec<T>) {
         let mut nodes: Vec<Node<T>> = Vec::new();
         for d in data  {
             nodes.push(Node::new(d));
         }
-        return nodes;
+        self.nodes = nodes;
     }
     fn check_circular_ref(&mut self) {
         let root_nodes = self.get_root_nodes();
@@ -123,7 +125,4 @@ impl<T: NodeBuilder + Clone> Tree<T> {
 }
 
 #[cfg(test)]
-mod tests {
-    #[test]
-    fn build_node() {}
-}
+mod test;
