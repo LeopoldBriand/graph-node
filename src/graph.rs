@@ -2,18 +2,18 @@ use super::node::Node;
 use super::node::NodeBuilder;
 
 #[derive(Clone)]
-pub struct Tree<T: NodeBuilder + Clone> {
+pub struct Graph<T: NodeBuilder + Clone> {
     pub nodes: Vec<Node<T>>,
     pub has_circular_ref: bool
 }
 
-impl<T: NodeBuilder + Clone> Tree<T> {
-    pub fn new(data: Vec<T>) -> Tree<T> {
+impl<T: NodeBuilder + Clone> Graph<T> {
+    pub fn new(data: Vec<T>) -> Graph<T> {
         let nodes: Vec<Node<T>> = Vec::new();
-        let mut tree = Tree {nodes, has_circular_ref: false};
-        tree.check_circular_ref();
-        tree.build_nodes(data);
-        return tree;
+        let mut graph = Graph {nodes, has_circular_ref: false};
+        graph.check_circular_ref();
+        graph.build_nodes(data);
+        return graph;
     }
     pub fn get_root_nodes(&self) -> Vec<Node<T>> {
         self.nodes
@@ -80,7 +80,7 @@ impl<T: NodeBuilder + Clone> Tree<T> {
     fn check_circular_ref(&mut self) {
         let root_nodes = self.get_root_nodes();
         if root_nodes.len() == 0 && self.nodes.len() > 0 {
-            eprintln!("Tree has no root nodes and could have circular reference but cannot determine where.");
+            eprintln!("Graph has no root nodes and could have circular reference but cannot determine where.");
             self.has_circular_ref = true;
         }
         self.recurse_check(root_nodes, Vec::new());

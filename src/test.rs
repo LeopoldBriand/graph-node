@@ -1,4 +1,4 @@
-use super::tree::{Tree};
+use super::graph::{Graph};
 use super::node::{NodeBuilder};
 
 #[derive(Clone)]
@@ -39,21 +39,21 @@ fn test_collection_with_duplicated_key() -> Vec<TestModel> {
     return collection;
 }
 #[test]
-fn basic_tree() {
-    let tree: Tree<TestModel> = Tree::new(test_collection());
-    assert_eq!(tree.nodes.len(), 4, "should have nodes");
-    assert_eq!(tree.get_root_nodes().len(), 1, "should have root nodes");
-    assert_eq!(tree.get_leaf_nodes().len(), 1, "should have leaf nodes");
-    let root_node = tree.get_root_nodes()[0].clone();
-    assert_eq!(tree.get_child_nodes(root_node).len(), 2, "root node should have children");
-    let leaf_node = tree.get_leaf_nodes()[0].clone();
-    assert_eq!(tree.get_parent_nodes(leaf_node).len(), 1, "leaf node should have parents");
-    let node = tree.nodes[0].clone();
+fn basic_graph() {
+    let graph: Graph<TestModel> = Graph::new(test_collection());
+    assert_eq!(graph.nodes.len(), 4, "should have nodes");
+    assert_eq!(graph.get_root_nodes().len(), 1, "should have root nodes");
+    assert_eq!(graph.get_leaf_nodes().len(), 1, "should have leaf nodes");
+    let root_node = graph.get_root_nodes()[0].clone();
+    assert_eq!(graph.get_child_nodes(root_node).len(), 2, "root node should have children");
+    let leaf_node = graph.get_leaf_nodes()[0].clone();
+    assert_eq!(graph.get_parent_nodes(leaf_node).len(), 1, "leaf node should have parents");
+    let node = graph.nodes[0].clone();
     assert_eq!(node.data.name, "name1", "data is accessible");
 }
 
 #[test]
 fn duplicated_nodes() {
-    let tree: Tree<TestModel> = Tree::new(test_collection_with_duplicated_key());
-    assert_eq!(tree.nodes.len(), 1, "should have only one nodes");
+    let graph: Graph<TestModel> = Graph::new(test_collection_with_duplicated_key());
+    assert_eq!(graph.nodes.len(), 1, "should have only one nodes");
 }
