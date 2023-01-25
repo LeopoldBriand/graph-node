@@ -96,7 +96,11 @@ impl<T: NodeBuilder + Clone> Tree<T> {
     fn build_nodes(&mut self, data: Vec<T>) {
         let mut nodes: Vec<Node<T>> = Vec::new();
         for d in data  {
-            nodes.push(Node::new(d));
+            let new_node = Node::new(d);
+            match nodes.iter().find(|node| node.key == new_node.key) {
+                Some(n) => eprintln!("Error: Duplicate node with key: {}, only the first one is added to the graph", n.key),
+                None => nodes.push(new_node),
+            } 
         }
         self.nodes = nodes;
     }

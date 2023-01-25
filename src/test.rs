@@ -30,6 +30,12 @@ fn test_collection() -> Vec<TestModel> {
     collection.push(TestModel::new("name4".to_string(), vec![], vec!["name3".to_string()]));
     return collection;
 }
+fn test_collection_with_duplicated_key() -> Vec<TestModel> {
+    let mut collection = Vec::new();
+    collection.push(TestModel::new("name1".to_string(), vec!["name2".to_string(), "name3".to_string()], vec![]));
+    collection.push(TestModel::new("name1".to_string(), vec!["name3".to_string()], vec![]));
+    return collection;
+}
 #[test]
 fn basic_tree() {
     let tree: Tree<TestModel> = Tree::new(test_collection());
@@ -42,4 +48,10 @@ fn basic_tree() {
     assert_eq!(tree.get_parent_nodes(leaf_node).len(), 1, "leaf node should have parents");
     let node = tree.nodes[0].clone();
     assert_eq!(node.data.name, "name1", "data is accessible");
+}
+
+#[test]
+fn duplicated_nodes() {
+    let tree: Tree<TestModel> = Tree::new(test_collection_with_duplicated_key());
+    assert_eq!(tree.nodes.len(), 1, "should have only one nodes");
 }
