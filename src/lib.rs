@@ -1,5 +1,3 @@
 pub mod node;
 pub mod graph;
-
-#[cfg(test)]
-mod test;
+pub mod directed_graph;
