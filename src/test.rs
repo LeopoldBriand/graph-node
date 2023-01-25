@@ -1,4 +1,6 @@
-use super::*;
+use super::tree::{Tree};
+use super::node::{NodeBuilder};
+
 #[derive(Clone)]
 struct TestModel {
     name: String,
