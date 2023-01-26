@@ -10,10 +10,23 @@ impl<T: DirectedGraphBuilder + Clone> DirectedGraph<T> {
     pub fn new(data: Vec<T>) -> DirectedGraph<T> {
         let nodes: Vec<DirectedNode<T>> = Vec::new();
         let mut graph = DirectedGraph {nodes, has_circular_ref: false};
-        graph.check_circular_ref();
         graph.build_nodes(data);
         DirectedGraph::build_relationship(& mut graph.nodes);
+        graph.check_circular_ref();
         return graph;
+    }
+    pub fn add_node(&mut self, node: DirectedNode<T> ) {
+        self.nodes.push(node);
+    }
+    pub fn update_node_by_key(&mut self, key: String, new_node: DirectedNode<T> ) {
+        if let Some(index) = self.nodes.iter().position(|node| node.key == key) {
+            self.nodes[index] = new_node;
+        }
+    }
+    pub fn delete_node_by_key(&mut self, key: String) {
+        if let Some(index) = self.nodes.iter().position(|node| node.key == key) {
+            self.nodes.swap_remove(index);
+        }
     }
     pub fn get_root_nodes(&self) -> Vec<DirectedNode<T>> {
         self.nodes
@@ -111,6 +124,7 @@ impl<T: DirectedGraphBuilder + Clone> DirectedGraph<T> {
             let mut acc = accumulator.clone();
             if acc.contains(&node.key) {
                 node.has_circular_ref = true;
+                self.update_node_by_key(node.key.clone(), node);
                 self.has_circular_ref = true;
                 return;
             }
@@ -186,6 +200,25 @@ fn test_collection_without_child_key() -> Vec<TestModel> {
     return collection;
 }
 
+#[allow(dead_code)]
+fn test_collection_with_circular_references_without_root_nodes() -> Vec<TestModel> {
+    let mut collection = Vec::new();
+    collection.push(TestModel::new("name1".to_string(), vec!["name2".to_string(), "name3".to_string()], vec![]));
+    collection.push(TestModel::new("name2".to_string(), vec!["name3".to_string()], vec![]));
+    collection.push(TestModel::new("name3".to_string(), vec!["name4".to_string()], vec![]));
+    collection.push(TestModel::new("name4".to_string(), vec!["name1".to_string()], vec![]));
+    return collection;
+}
+#[allow(dead_code)]
+fn test_collection_with_circular_references_with_root_nodes() -> Vec<TestModel> {
+    let mut collection = Vec::new();
+    collection.push(TestModel::new("name1".to_string(), vec!["name2".to_string(), "name3".to_string()], vec![]));
+    collection.push(TestModel::new("name2".to_string(), vec!["name3".to_string()], vec![]));
+    collection.push(TestModel::new("name3".to_string(), vec!["name4".to_string()], vec![]));
+    collection.push(TestModel::new("name4".to_string(), vec!["name2".to_string()], vec![]));
+    return collection;
+}
+
 #[test]
 fn basic_graph() {
     let data = test_collection();
@@ -228,4 +261,19 @@ fn without_children() {
     assert_eq!(graph.nodes.len(), graph2.nodes.len(), "should have same number of nodes");
     assert_eq!(graph.get_leaf_nodes().len(), graph2.get_leaf_nodes().len(), "should have same number of leaf nodes");
     assert_eq!(graph.get_root_nodes().len(), graph2.get_root_nodes().len(), "should have same number of root nodes");
+}
+
+#[test]
+fn circular_references() {
+    let data_without_root_nodes = test_collection_with_circular_references_without_root_nodes();
+    let data_with_root_nodes = test_collection_with_circular_references_with_root_nodes();
+    let graph_without_root_nodes: DirectedGraph<TestModel> = DirectedGraph::new(data_without_root_nodes);
+    let graph_with_root_nodes: DirectedGraph<TestModel> = DirectedGraph::new(data_with_root_nodes);
+    assert_eq!(graph_without_root_nodes.nodes.len(), 4, "graph_without_root_nodes should have nodes");
+    assert_eq!(graph_with_root_nodes.nodes.len(), 4, "graph_with_root_nodes should have nodes");
+    assert_eq!(graph_without_root_nodes.has_circular_ref, true,"should have circular refs without root nodes");
+    assert_eq!(graph_without_root_nodes.get_circular_nodes().len(), 0,"should not have circular nodes without root nodes");
+    assert_eq!(graph_with_root_nodes.has_circular_ref, true,"should have circular refs with root nodes");
+    assert_eq!(graph_with_root_nodes.get_circular_nodes().len(), 2,"should have circular nodes with root nodes");
+    
 }
