@@ -12,6 +12,7 @@ impl<T: DirectedGraphBuilder + Clone> DirectedGraph<T> {
         let mut graph = DirectedGraph {nodes, has_circular_ref: false};
         graph.check_circular_ref();
         graph.build_nodes(data);
+        DirectedGraph::build_relationship(& mut graph.nodes);
         return graph;
     }
     pub fn get_root_nodes(&self) -> Vec<DirectedNode<T>> {
@@ -75,6 +76,27 @@ impl<T: DirectedGraphBuilder + Clone> DirectedGraph<T> {
             } 
         }
         self.nodes = nodes;
+    }
+    fn build_relationship(nodes: &mut Vec<DirectedNode<T>>) {
+        let cloned_nodes = nodes.clone();
+        for node in nodes {
+            let parents: Vec<DirectedNode<T>> = cloned_nodes
+                .iter()
+                .filter(|cn| cn.child_keys.contains(&(node.key.clone())))
+                .cloned()
+                .collect();
+            let children: Vec<DirectedNode<T>> = cloned_nodes
+                .iter()
+                .filter(|cn| cn.parent_keys.contains(&(node.key.clone())))
+                .cloned()
+                .collect();
+            for parent_node in parents {
+                if !node.parent_keys.contains(&parent_node.key) { node.parent_keys.push(parent_node.key)}
+            }
+            for child_node in children {
+                if !node.child_keys.contains(&child_node.key) { node.child_keys.push(child_node.key)}
+            }
+        }
     }
     fn check_circular_ref(&mut self) {
         let root_nodes = self.get_root_nodes();
@@ -143,6 +165,27 @@ fn test_collection_with_duplicated_key() -> Vec<TestModel> {
     collection.push(TestModel::new("name1".to_string(), vec!["name3".to_string()], vec![]));
     return collection;
 }
+
+#[allow(dead_code)]
+fn test_collection_without_parent_key() -> Vec<TestModel> {
+    let mut collection = Vec::new();
+    collection.push(TestModel::new("name1".to_string(), vec!["name2".to_string(), "name3".to_string()], vec![]));
+    collection.push(TestModel::new("name2".to_string(), vec!["name3".to_string()], vec![]));
+    collection.push(TestModel::new("name3".to_string(), vec!["name4".to_string()], vec![]));
+    collection.push(TestModel::new("name4".to_string(), vec![], vec![]));
+    return collection;
+}
+
+#[allow(dead_code)]
+fn test_collection_without_child_key() -> Vec<TestModel> {
+    let mut collection = Vec::new();
+    collection.push(TestModel::new("name1".to_string(), vec![], vec![]));
+    collection.push(TestModel::new("name2".to_string(), vec![], vec!["name1".to_string()]));
+    collection.push(TestModel::new("name3".to_string(), vec![], vec!["name2".to_string(), "name1".to_string()]));
+    collection.push(TestModel::new("name4".to_string(), vec![], vec!["name3".to_string()]));
+    return collection;
+}
+
 #[test]
 fn basic_graph() {
     let data = test_collection();
@@ -163,4 +206,26 @@ fn duplicated_nodes() {
     let data = test_collection_with_duplicated_key();
     let graph: DirectedGraph<TestModel> = DirectedGraph::new(data);
     assert_eq!(graph.nodes.len(), 1, "should have only one nodes");
+}
+
+#[test]
+fn without_parents() {
+    let data = test_collection_without_parent_key();
+    let graph: DirectedGraph<TestModel> = DirectedGraph::new(data);
+    let data2 = test_collection();
+    let graph2: DirectedGraph<TestModel> = DirectedGraph::new(data2);
+    assert_eq!(graph.nodes.len(), graph2.nodes.len(), "should have same number of nodes");
+    assert_eq!(graph.get_leaf_nodes().len(), graph2.get_leaf_nodes().len(), "should have same number of leaf nodes");
+    assert_eq!(graph.get_root_nodes().len(), graph2.get_root_nodes().len(), "should have same number of root nodes");
+}
+
+#[test]
+fn without_children() {
+    let data = test_collection_without_child_key();
+    let graph: DirectedGraph<TestModel> = DirectedGraph::new(data);
+    let data2 = test_collection();
+    let graph2: DirectedGraph<TestModel> = DirectedGraph::new(data2);
+    assert_eq!(graph.nodes.len(), graph2.nodes.len(), "should have same number of nodes");
+    assert_eq!(graph.get_leaf_nodes().len(), graph2.get_leaf_nodes().len(), "should have same number of leaf nodes");
+    assert_eq!(graph.get_root_nodes().len(), graph2.get_root_nodes().len(), "should have same number of root nodes");
 }
