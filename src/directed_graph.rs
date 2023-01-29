@@ -1,12 +1,16 @@
 use super::node::{DirectedNode};
-use super::node::{DirectedGraphBuilder};
-
+use super::builders::{DirectedGraphBuilder};
+/// Directed graph structure
 pub struct DirectedGraph<T> where T: DirectedGraphBuilder + Clone {
+    /// List of the nodes of the graph.
     pub nodes: Vec<DirectedNode<T>>,
+    /// Is set to true when a graph has a circular reference or has no root nodes.
     pub has_circular_ref: bool
 }
 
 impl<T: DirectedGraphBuilder + Clone> DirectedGraph<T> {
+    /// Return a new [DirectedGraph] with nodes build on top of datas.
+    /// It will automaticaly build nodes relationship and check for any circular references
     pub fn new(data: Vec<T>) -> DirectedGraph<T> {
         let nodes: Vec<DirectedNode<T>> = Vec::new();
         let mut graph = DirectedGraph {nodes, has_circular_ref: false};
@@ -15,19 +19,24 @@ impl<T: DirectedGraphBuilder + Clone> DirectedGraph<T> {
         graph.check_circular_ref();
         return graph;
     }
+    /// Add a new node in the graph
     pub fn add_node(&mut self, node: DirectedNode<T> ) {
         self.nodes.push(node);
     }
+    /// Update a node with is key
     pub fn update_node_by_key(&mut self, key: String, new_node: DirectedNode<T> ) {
         if let Some(index) = self.nodes.iter().position(|node| node.key == key) {
             self.nodes[index] = new_node;
         }
     }
+    /// Delete a node from the graph found by his key
     pub fn delete_node_by_key(&mut self, key: String) {
         if let Some(index) = self.nodes.iter().position(|node| node.key == key) {
             self.nodes.swap_remove(index);
         }
     }
+    /// Get all nodes that have no parents. 
+    /// Warning: This return a copy of the nodes
     pub fn get_root_nodes(&self) -> Vec<DirectedNode<T>> {
         self.nodes
             .iter()
@@ -35,6 +44,8 @@ impl<T: DirectedGraphBuilder + Clone> DirectedGraph<T> {
             .cloned()
             .collect()
     }
+    /// Get all nodes that have no children.
+    /// Warning: This return a copy of the nodes
     pub fn get_leaf_nodes(&self) -> Vec<DirectedNode<T>> {
         self.nodes
             .iter()
@@ -42,6 +53,8 @@ impl<T: DirectedGraphBuilder + Clone> DirectedGraph<T> {
             .cloned()
             .collect()
     }
+    /// Get every nodes that are in a graph cycle.
+    /// Warning: This return a copy of the nodes
     pub fn get_circular_nodes(&self) -> Vec<DirectedNode<T>> {
         self.nodes
             .iter()
@@ -49,6 +62,8 @@ impl<T: DirectedGraphBuilder + Clone> DirectedGraph<T> {
             .cloned()
             .collect()
     }
+    /// Get every childs of a given node.
+    /// Warning: This return a copy of the nodes
     pub fn get_child_nodes(&self, current_node: DirectedNode<T>) -> Vec<DirectedNode<T>> {
         self.nodes
             .iter()
@@ -59,6 +74,8 @@ impl<T: DirectedGraphBuilder + Clone> DirectedGraph<T> {
             .cloned()
             .collect()
     }
+    /// Get every parents of a given node.
+    /// Warning: This return a copy of the nodes
     pub fn get_parent_nodes(&self, current_node: DirectedNode<T>) -> Vec<DirectedNode<T>> {
         self.nodes
             .iter()
@@ -69,6 +86,8 @@ impl<T: DirectedGraphBuilder + Clone> DirectedGraph<T> {
             .cloned()
             .collect()
     }
+    /// Get every nodes that match a common parent of a given node.
+    /// Warning: This return a copy of the nodes
     pub fn get_sibling_nodes(&self, current_node: DirectedNode<T>) -> Vec<DirectedNode<T>> {
         self.nodes
             .iter()

@@ -1,13 +1,17 @@
 use super::node::{GraphNode};
-use super::node::{GraphBuilder};
+use super::builders::{GraphBuilder};
 
-#[derive(Clone)]
+/// Undirected graph structure
 pub struct Graph<T> where T: GraphBuilder + Clone {
+    /// List of the nodes of the graph.
     pub nodes: Vec<GraphNode<T>>,
+    /// Is set to true when a graph has a circular reference or has no root nodes.
     pub has_circular_ref: bool
 }
 
 impl<T: GraphBuilder + Clone> Graph<T> {
+    /// Return a new [Graph] with nodes build on top of datas.
+    /// It will automaticaly build nodes relationship and check for any circular references
     pub fn new(data: Vec<T>) -> Graph<T> {
         let nodes: Vec<GraphNode<T>> = Vec::new();
         let mut graph = Graph {nodes, has_circular_ref: false};
@@ -15,6 +19,8 @@ impl<T: GraphBuilder + Clone> Graph<T> {
         graph.build_nodes(data);
         return graph;
     }
+    /// Get every nodes that are in a graph cycle.
+    /// Warning: This return a copy of the nodes
     pub fn get_circular_nodes(&self) -> Vec<GraphNode<T>> {
         self.nodes
             .iter()
@@ -22,6 +28,8 @@ impl<T: GraphBuilder + Clone> Graph<T> {
             .cloned()
             .collect()
     }
+    /// Get every nodes linked with a given node.
+    /// Warning: This return a copy of the nodes
     pub fn get_neighbour_nodes(&self, current_node: GraphNode<T>) -> Vec<GraphNode<T>> {
         self.nodes
             .iter()
