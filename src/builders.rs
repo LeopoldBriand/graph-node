@@ -1,8 +1,6 @@
 /// This trait is needed to build `GraphNode` struct and construct an undirected graph.
 /// # Examples
-/// ```no_run
-/// use builders::{GraphBuilder};
-///
+/// ```
 /// struct TestModel {
 ///     name: String,
 ///     friends: Vec<String>,
@@ -25,9 +23,7 @@ pub trait GraphBuilder {
 
 /// This trait is needed to build `DirectedGraphNode` struct and construct a directed graph.
 /// # Examples
-/// ```no_run
-/// use builders::{DirectedGraphBuilder};
-///
+/// ```
 /// struct TestModel {
 ///     name: String,
 ///     children: Vec<String>,
