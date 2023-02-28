@@ -1,57 +1,109 @@
-use super::builders::{DirectedGraphBuilder, GraphBuilder};
+use std::collections::HashMap;
+use crate::types::{Undirected, Directed};
+use crate::builders::{DirectedGraphBuilder, UndirectedGraphBuilder};
+
+/// The direction of a link between to nodes
+#[derive(Clone)]
+#[derive(PartialEq)]
+enum LinksDirection {
+    /// Undirected Nodes
+    Both,
+    /// From parent to child
+    From,
+    /// From child to parent
+    To,
+}
 
 /// The node struct for undirected graph implementation 
 #[derive(Clone)]
-pub struct GraphNode<T: Clone> {
+pub struct Node<NodeType, T: Clone> {
     /// The `data` variable stores the data that were used to build the node.
     pub data: T,
     /// The key which identifies the node.
     pub key: String,
-    /// The list of keys of the nodes that are linked with the node.
-    pub neighbour_keys: Vec<String>,
+    links: HashMap<String, LinksDirection>,
     /// This variable is set to true if the node is inside a graph cycle.
-    pub has_circular_ref: bool
+    pub is_in_circular_ref: bool,
+    node_type: std::marker::PhantomData<NodeType>,
 }
 
-
-impl<T> GraphNode<T> where T: GraphBuilder + Clone {
-    /// Return a new node from data that implement DirectedNode trait
-    pub fn new(data: T) -> GraphNode<T> {
+impl<T> Node<Undirected, T> where T: UndirectedGraphBuilder + Clone {
+    /// The node for undirected graph implementation 
+    pub fn new(data: T) -> Node<Undirected, T> {
         let key = data.build_node_key();
-        let neighbour_keys = data.build_neighbour_keys();
-        GraphNode { data, key, neighbour_keys, has_circular_ref: false}
+        let links: HashMap<String, LinksDirection> = data
+            .build_neighbour_keys()
+            .into_iter()
+            .map(|el| (el.clone(), LinksDirection::Both))
+            .collect();
+        Node { 
+            data, 
+            key, 
+            links, 
+            is_in_circular_ref: false, 
+            node_type: std::marker::PhantomData::<Undirected>,
+        }
+    }
+    
+    /// The list of keys of the nodes that are linked with the node.
+    pub fn get_neighbour_keys(&self) -> Vec<String> {
+        self.links.clone().into_keys().collect()
     }
 }
 
-/// The node struct for directed graph implementation 
-#[derive(Clone)]
-pub struct DirectedNode<T: Clone> {
-    /// The `data` variable stores the data that were used to build the node.
-    pub data: T,
-    /// The key which identifies the node.
-    pub key: String,
-    /// The list of keys of the nodes that are linked to the node.
-    pub parent_keys: Vec<String>,
-    /// The list of keys of the nodes that are linked from the node.
-    pub child_keys: Vec<String>,
-    /// This variable is set to true if the node is inside a graph cycle.
-    pub has_circular_ref: bool
-}
-
-impl<T> DirectedNode<T> where T: DirectedGraphBuilder + Clone {
-    /// Return a new node from data that implement DirectedNode trait
-    pub fn new(data: T) -> DirectedNode<T> {
+impl<T> Node<Directed, T> where T: DirectedGraphBuilder + Clone {
+    /// The node for directed graph implementation 
+    pub fn new(data: T) -> Node<Directed, T> {
         let key = data.build_node_key();
-        let parent_keys = data.build_parent_key();
-        let child_keys = data.build_child_key();
-        DirectedNode { data, key, parent_keys, child_keys, has_circular_ref: false}
+        let parents_keys: HashMap<String, LinksDirection> = data
+            .build_parent_key()
+            .into_iter()
+            .map(|el| (el.clone(), LinksDirection::From))
+            .collect();
+        let child_keys: HashMap<String, LinksDirection> = data
+            .build_child_key()
+            .into_iter()
+            .map(|el| (el.clone(), LinksDirection::To))
+            .collect();
+        let links = parents_keys.into_iter().chain(child_keys).collect();
+        Node { 
+            data, 
+            key, 
+            links, 
+            is_in_circular_ref: false, 
+            node_type: std::marker::PhantomData::<Directed>,
+        }
+    }
+    /// The list of keys of the nodes that are linked to the node.
+    pub fn get_parent_keys(&self) -> Vec<String> {
+        let filtered_hash: HashMap<String, LinksDirection> = self.links.clone()
+            .into_iter()
+            .filter(|(_key, value)| { value == &LinksDirection::From })
+            .collect();
+        filtered_hash.into_keys().collect()
+    }
+    /// The list of keys of the nodes that are linked from the node.
+    pub fn get_child_keys(&self) -> Vec<String> {
+        let filtered_hash: HashMap<String, LinksDirection> = self.links.clone()
+            .into_iter()
+            .filter(|(_key, value)| { value == &LinksDirection::To })
+            .collect();
+        filtered_hash.into_keys().collect()
+    }
+    /// Add parent with th node key
+    pub fn add_parent(&mut self, key: String) {
+        self.links.insert(key, LinksDirection::From);
+    }
+    /// Add child with the node key
+    pub fn add_child(&mut self, key: String) {
+        self.links.insert(key, LinksDirection::To);
     }
     /// Return a true if the node has one parent ore more
     pub fn has_parents(&self) -> bool {
-        return self.parent_keys.len() > 0;
+        return self.get_parent_keys().len() > 0;
     }
     /// Return a true if the node has one child ore more
     pub fn has_children(&self) -> bool {
-        return self.child_keys.len() > 0;
-      }
+        return self.get_child_keys().len() > 0;
+    }
 }

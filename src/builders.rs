@@ -1,11 +1,13 @@
-/// This trait is needed to build `GraphNode` struct and construct an undirected graph.
+/// This trait is needed to build `Node<Undirected, T>` struct and construct an undirected graph.
 /// # Examples
 /// ```
+/// use graph_node::builders::UndirectedGraphBuilder;
+/// 
 /// struct TestModel {
 ///     name: String,
 ///     friends: Vec<String>,
 /// }
-/// impl GraphBuilder for TestModel {
+/// impl UndirectedGraphBuilder for TestModel {
 ///     fn build_neighbour_keys(&self) -> Vec<String> {
 ///         return self.friends.clone();
 ///     }
@@ -14,16 +16,18 @@
 ///     }
 /// }
 /// ```
-pub trait GraphBuilder {
+pub trait UndirectedGraphBuilder {
     /// Should be implemented to return an array of the keys of nodes that are linked with the node.
     fn build_neighbour_keys(&self) -> Vec<String>;
     /// Should return the node key.
     fn build_node_key(&self) -> String;
 }
 
-/// This trait is needed to build `DirectedGraphNode` struct and construct a directed graph.
+/// This trait is needed to build `Node<Directed, T>` struct and construct a directed graph.
 /// # Examples
 /// ```
+/// use graph_node::builders::DirectedGraphBuilder;
+/// 
 /// struct TestModel {
 ///     name: String,
 ///     children: Vec<String>,
