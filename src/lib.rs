@@ -34,7 +34,7 @@
 
 //! ```rs
 //! let data: Vec<TestModel> = getData();
-//! let graph: DirectedGraph<TestModel> = DirectedGraph::new(data);
+//! let graph: Graph<Directed, TestModel> = Graph::new(data);
 //! ``` 
 
 
@@ -46,7 +46,13 @@ pub mod node;
 pub mod builders;
 
 /// The `graph` module contain the undirected graph struct.
-pub mod graph;
+// pub mod undirected_graph;
 
 /// The `directed_graph` module contain the directed graph struct.
-pub mod directed_graph;
+//pub mod directed_graph;
+
+/// main graph module
+pub mod graph;
+
+/// Phantom types for traits implementations
+pub mod types;

@@ -1,107 +1,89 @@
-use super::node::{DirectedNode};
-use super::builders::{DirectedGraphBuilder};
-/// Directed graph structure
-pub struct DirectedGraph<T> where T: DirectedGraphBuilder + Clone {
-    /// List of the nodes of the graph.
-    pub nodes: Vec<DirectedNode<T>>,
-    /// Is set to true when a graph has a circular reference or has no root nodes.
-    pub has_circular_ref: bool
-}
+use crate::graph::Graph;
+use crate::builders::DirectedGraphBuilder;
+use crate::types::Directed;
+use crate::node::Node;
 
-impl<T: DirectedGraphBuilder + Clone> DirectedGraph<T> {
-    /// Return a new [DirectedGraph] with nodes build on top of datas.
+impl<T: DirectedGraphBuilder + Clone> Graph<Directed, T> {
+    /// Return a new [Graph] with directed attributes and nodes build on top of datas.
     /// It will automaticaly build nodes relationship and check for any circular references
-    pub fn new(data: Vec<T>) -> DirectedGraph<T> {
-        let nodes: Vec<DirectedNode<T>> = Vec::new();
-        let mut graph = DirectedGraph {nodes, has_circular_ref: false};
+    pub fn new(data: Vec<T>) -> Graph<Directed, T> {
+        let nodes: Vec<Node<Directed, T>> = Vec::new();
+        let mut graph = Graph {
+            nodes, 
+            has_circular_ref: false,
+            graph_type: std::marker::PhantomData::<Directed>,
+        };
         graph.build_nodes(data);
-        DirectedGraph::build_relationship(& mut graph.nodes);
-        graph.check_circular_ref();
+        graph.build_relationship();
+        if graph.get_root_nodes().len() == 0 && graph.nodes.len() > 0 {
+            eprintln!("Graph has no root nodes and could have circular reference but cannot determine where.");
+            graph.has_circular_ref = true;
+        } else {
+            graph.check_circular_ref();
+        }
         return graph;
-    }
-    /// Add a new node in the graph
-    pub fn add_node(&mut self, node: DirectedNode<T> ) {
-        self.nodes.push(node);
-    }
-    /// Update a node with is key
-    pub fn update_node_by_key(&mut self, key: String, new_node: DirectedNode<T> ) {
-        if let Some(index) = self.nodes.iter().position(|node| node.key == key) {
-            self.nodes[index] = new_node;
-        }
-    }
-    /// Delete a node from the graph found by his key
-    pub fn delete_node_by_key(&mut self, key: String) {
-        if let Some(index) = self.nodes.iter().position(|node| node.key == key) {
-            self.nodes.swap_remove(index);
-        }
     }
     /// Get all nodes that have no parents. 
     /// Warning: This return a copy of the nodes
-    pub fn get_root_nodes(&self) -> Vec<DirectedNode<T>> {
+    pub fn get_root_nodes(&self) -> Vec<&Node<Directed, T>> {
         self.nodes
             .iter()
             .filter(|node| node.has_parents() == false)
-            .cloned()
             .collect()
     }
     /// Get all nodes that have no children.
     /// Warning: This return a copy of the nodes
-    pub fn get_leaf_nodes(&self) -> Vec<DirectedNode<T>> {
+    pub fn get_leaf_nodes(&self) -> Vec<&Node<Directed, T>> {
         self.nodes
             .iter()
             .filter(|node| node.has_children() == false)
-            .cloned()
-            .collect()
-    }
-    /// Get every nodes that are in a graph cycle.
-    /// Warning: This return a copy of the nodes
-    pub fn get_circular_nodes(&self) -> Vec<DirectedNode<T>> {
-        self.nodes
-            .iter()
-            .filter(|node| node.has_circular_ref == true)
-            .cloned()
-            .collect()
-    }
-    /// Get every childs of a given node.
-    /// Warning: This return a copy of the nodes
-    pub fn get_child_nodes(&self, current_node: DirectedNode<T>) -> Vec<DirectedNode<T>> {
-        self.nodes
-            .iter()
-            .filter(|node| {
-                if node.key == current_node.key {return false}
-                return current_node.child_keys.contains(&node.key)
-            })
-            .cloned()
-            .collect()
-    }
-    /// Get every parents of a given node.
-    /// Warning: This return a copy of the nodes
-    pub fn get_parent_nodes(&self, current_node: DirectedNode<T>) -> Vec<DirectedNode<T>> {
-        self.nodes
-            .iter()
-            .filter(|node| {
-                if node.key == current_node.key {return false}
-                return current_node.parent_keys.contains(&node.key)
-            })
-            .cloned()
             .collect()
     }
     /// Get every nodes that match a common parent of a given node.
     /// Warning: This return a copy of the nodes
-    pub fn get_sibling_nodes(&self, current_node: DirectedNode<T>) -> Vec<DirectedNode<T>> {
+    pub fn get_sibling_nodes(&self, current_node: &Node<Directed, T>) -> Vec<&Node<Directed, T>> {
         self.nodes
             .iter()
             .filter(|node| {
                 if node.key == current_node.key {return false}
-                return node.parent_keys.iter().any(|key| current_node.parent_keys.contains(key)) 
+                return node.get_parent_keys().iter().any(|key| current_node.get_parent_keys().contains(key)) 
             })
-            .cloned()
+            .collect()
+    }
+    /// Get every nodes that are in a graph cycle.
+    /// Warning: This return a copy of the nodes
+    pub fn get_circular_nodes(&self) -> Vec<&Node<Directed, T>> {
+        self.nodes
+            .iter()
+            .filter(|node| node.is_in_circular_ref == true)
+            .collect()
+    }
+    /// Get every parents of a given node.
+    /// Warning: This return a copy of the nodes
+    pub fn get_parent_nodes(&self, current_node: &Node<Directed, T>) -> Vec<&Node<Directed, T>> {
+        self.nodes
+            .iter()
+            .filter(|node| {
+                if node.key == current_node.key {return false}
+                return current_node.get_parent_keys().contains(&node.key)
+            })
+            .collect()
+    }
+    /// Get every childs of a given node.
+    /// Warning: This return a copy of the nodes
+    pub fn get_child_nodes(&self, current_node: &Node<Directed, T>) -> Vec<&Node<Directed, T>> {
+        self.nodes
+            .iter()
+            .filter(|node| {
+                if node.key == current_node.key {return false}
+                return current_node.get_child_keys().contains(&node.key)
+            })
             .collect()
     }
     fn build_nodes(&mut self, data: Vec<T>) {
-        let mut nodes: Vec<DirectedNode<T>> = Vec::new();
+        let mut nodes: Vec<Node<Directed, T>> = Vec::new();
         for d in data  {
-            let new_node = DirectedNode::new(d);
+            let new_node: Node<Directed, T> =  Node::<Directed, T>::new(d);
             match nodes.iter().find(|node| node.key == new_node.key) {
                 Some(n) => eprintln!("Error: Duplicate node with key: {}, only the first one is added to the graph", n.key),
                 None => nodes.push(new_node),
@@ -109,48 +91,51 @@ impl<T: DirectedGraphBuilder + Clone> DirectedGraph<T> {
         }
         self.nodes = nodes;
     }
-    fn build_relationship(nodes: &mut Vec<DirectedNode<T>>) {
-        let cloned_nodes = nodes.clone();
-        for node in nodes {
-            let parents: Vec<DirectedNode<T>> = cloned_nodes
+    fn build_relationship(&mut self) {
+        let cloned_nodes = self.nodes.clone();
+        for node in &mut self.nodes {
+            let parents: Vec<&Node<Directed, T>> = cloned_nodes
                 .iter()
-                .filter(|cn| cn.child_keys.contains(&(node.key.clone())))
-                .cloned()
+                .filter(|cn| cn.get_child_keys().contains(&(node.key.clone())))
                 .collect();
-            let children: Vec<DirectedNode<T>> = cloned_nodes
+            let children: Vec<&Node<Directed, T>> = cloned_nodes
                 .iter()
-                .filter(|cn| cn.parent_keys.contains(&(node.key.clone())))
-                .cloned()
+                .filter(|cn| cn.get_parent_keys().contains(&(node.key.clone())))
                 .collect();
             for parent_node in parents {
-                if !node.parent_keys.contains(&parent_node.key) { node.parent_keys.push(parent_node.key)}
+                if !node.get_parent_keys().contains(&parent_node.key) { node.add_parent(parent_node.key.clone())}
             }
             for child_node in children {
-                if !node.child_keys.contains(&child_node.key) { node.child_keys.push(child_node.key)}
+                if !node.get_child_keys().contains(&child_node.key) { node.add_child(child_node.key.clone())}
             }
         }
     }
     fn check_circular_ref(&mut self) {
         let root_nodes = self.get_root_nodes();
-        if root_nodes.len() == 0 && self.nodes.len() > 0 {
-            eprintln!("Graph has no root nodes and could have circular reference but cannot determine where.");
-            self.has_circular_ref = true;
-        }
-        self.recurse_check(root_nodes, Vec::new());
+        let root_keys: Vec<String> = root_nodes.clone().into_iter().map(|node| node.key.clone()).collect(); 
+        self.recurse_check(root_keys, Vec::new());
     }
-    fn recurse_check(&mut self, nodes: Vec<DirectedNode<T>>, accumulator: Vec<String>) {
-        for mut node in nodes {
+    fn recurse_check(&mut self, node_keys: Vec<String>, accumulator: Vec<String>) {
+        for key in node_keys {
             let mut acc = accumulator.clone();
-            if acc.contains(&node.key) {
-                node.has_circular_ref = true;
-                self.update_node_by_key(node.key.clone(), node);
-                self.has_circular_ref = true;
-                return;
-            }
-            acc.push(node.clone().key);
-            if node.has_children() {
-                self.recurse_check(self.get_child_nodes(node), acc);
-            }
+            match self.get_node_by_key(key.clone()) {
+                Some(node) => {
+                    if acc.contains(&key) {
+                        let mut new_node = node.clone();
+                        new_node.is_in_circular_ref = true;
+                        self.update_node_by_key(key, new_node);
+                        self.has_circular_ref = true;
+                        return;
+                    }
+                    acc.push(key.clone());
+                    if node.has_children() {
+                        self.recurse_check(node.get_child_keys(), acc);
+                    }
+                }
+                None => {
+                    //todo!(" Handle node not found error here")
+                }
+            };
         }
     }
 }
@@ -241,14 +226,14 @@ fn test_collection_with_circular_references_with_root_nodes() -> Vec<TestModel> 
 #[test]
 fn basic_graph() {
     let data = test_collection();
-    let graph: DirectedGraph<TestModel> = DirectedGraph::new(data);
+    let graph = Graph::<Directed, TestModel>::new(data);
     assert_eq!(graph.nodes.len(), 4, "should have nodes");
     assert_eq!(graph.get_root_nodes().len(), 1, "should have root nodes");
     assert_eq!(graph.get_leaf_nodes().len(), 1, "should have leaf nodes");
     let root_node = graph.get_root_nodes()[0].clone();
-    assert_eq!(graph.get_child_nodes(root_node).len(), 2, "root node should have children");
+    assert_eq!(graph.get_child_nodes(&root_node).len(), 2, "root node should have children");
     let leaf_node = graph.get_leaf_nodes()[0].clone();
-    assert_eq!(graph.get_parent_nodes(leaf_node).len(), 1, "leaf node should have parents");
+    assert_eq!(graph.get_parent_nodes(&leaf_node).len(), 1, "leaf node should have parents");
     let node = graph.nodes[0].clone();
     assert_eq!(node.data.name, "name1", "data is accessible");
 }
@@ -256,16 +241,16 @@ fn basic_graph() {
 #[test]
 fn duplicated_nodes() {
     let data = test_collection_with_duplicated_key();
-    let graph: DirectedGraph<TestModel> = DirectedGraph::new(data);
+    let graph = Graph::<Directed, TestModel>::new(data);
     assert_eq!(graph.nodes.len(), 1, "should have only one nodes");
 }
 
 #[test]
 fn without_parents() {
     let data = test_collection_without_parent_key();
-    let graph: DirectedGraph<TestModel> = DirectedGraph::new(data);
+    let graph = Graph::<Directed, TestModel>::new(data);
     let data2 = test_collection();
-    let graph2: DirectedGraph<TestModel> = DirectedGraph::new(data2);
+    let graph2 = Graph::<Directed, TestModel>::new(data2);
     assert_eq!(graph.nodes.len(), graph2.nodes.len(), "should have same number of nodes");
     assert_eq!(graph.get_leaf_nodes().len(), graph2.get_leaf_nodes().len(), "should have same number of leaf nodes");
     assert_eq!(graph.get_root_nodes().len(), graph2.get_root_nodes().len(), "should have same number of root nodes");
@@ -274,9 +259,9 @@ fn without_parents() {
 #[test]
 fn without_children() {
     let data = test_collection_without_child_key();
-    let graph: DirectedGraph<TestModel> = DirectedGraph::new(data);
+    let graph = Graph::<Directed, TestModel>::new(data);
     let data2 = test_collection();
-    let graph2: DirectedGraph<TestModel> = DirectedGraph::new(data2);
+    let graph2 = Graph::<Directed, TestModel>::new(data2);
     assert_eq!(graph.nodes.len(), graph2.nodes.len(), "should have same number of nodes");
     assert_eq!(graph.get_leaf_nodes().len(), graph2.get_leaf_nodes().len(), "should have same number of leaf nodes");
     assert_eq!(graph.get_root_nodes().len(), graph2.get_root_nodes().len(), "should have same number of root nodes");
@@ -286,8 +271,8 @@ fn without_children() {
 fn circular_references() {
     let data_without_root_nodes = test_collection_with_circular_references_without_root_nodes();
     let data_with_root_nodes = test_collection_with_circular_references_with_root_nodes();
-    let graph_without_root_nodes: DirectedGraph<TestModel> = DirectedGraph::new(data_without_root_nodes);
-    let graph_with_root_nodes: DirectedGraph<TestModel> = DirectedGraph::new(data_with_root_nodes);
+    let graph_without_root_nodes = Graph::<Directed, TestModel>::new(data_without_root_nodes);
+    let graph_with_root_nodes = Graph::<Directed, TestModel>::new(data_with_root_nodes);
     assert_eq!(graph_without_root_nodes.nodes.len(), 4, "graph_without_root_nodes should have nodes");
     assert_eq!(graph_with_root_nodes.nodes.len(), 4, "graph_with_root_nodes should have nodes");
     assert_eq!(graph_without_root_nodes.has_circular_ref, true,"should have circular refs without root nodes");
