@@ -1,8 +1,11 @@
-use crate::node::Node;
+use crate::{node::Node, edge::Edges};
+
 /// Graph structure
 pub struct Graph<GraphType, T> where T: Clone {
     /// List of the nodes of the graph.
     pub nodes: Vec<Node<GraphType, T>>,
+    /// List of the links between the nodes.
+    pub edges: Edges,
     /// Is set to true when a graph has a circular reference or has no root nodes.
     pub has_circular_ref: bool,
     pub(crate) graph_type: std::marker::PhantomData<GraphType>,

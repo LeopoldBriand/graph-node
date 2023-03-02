@@ -1,3 +1,4 @@
+use crate::edge::Edges;
 use crate::graph::Graph;
 use crate::builders::DirectedGraphBuilder;
 use crate::types::Directed;
@@ -8,8 +9,10 @@ impl<T: DirectedGraphBuilder + Clone> Graph<Directed, T> {
     /// It will automaticaly build nodes relationship and check for any circular references
     pub fn new(data: Vec<T>) -> Graph<Directed, T> {
         let nodes: Vec<Node<Directed, T>> = Vec::new();
+        let edges: Edges = Edges::new();
         let mut graph = Graph {
             nodes, 
+            edges,
             has_circular_ref: false,
             graph_type: std::marker::PhantomData::<Directed>,
         };
