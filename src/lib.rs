@@ -42,6 +42,9 @@
 /// It is these nodes that will contain the specific data that will be returned by the different graph methods.
 pub mod node;
 
+/// The `edge` module contails Edge and Edges types used in different graphs.
+pub mod edge;
+
 /// The `builder` module contains the different features used to build the nodes from the data.
 pub mod builders;
 

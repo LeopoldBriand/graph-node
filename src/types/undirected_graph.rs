@@ -1,3 +1,4 @@
+use crate::edge::Edges;
 use crate::graph::Graph;
 use crate::builders::UndirectedGraphBuilder;
 use crate::types::Undirected;
@@ -8,8 +9,10 @@ impl<T: UndirectedGraphBuilder + Clone> Graph<Undirected, T> {
     /// It will automaticaly build nodes relationship and check for any circular references
     pub fn new(data: Vec<T>) -> Graph<Undirected, T> {
         let nodes: Vec<Node<Undirected, T>> = Vec::new();
+        let edges: Edges = Edges::new();
         let mut graph = Graph {
             nodes,
+            edges,
             has_circular_ref: false,
             graph_type: std::marker::PhantomData::<Undirected>,
         };
