@@ -10,3 +10,4 @@ repository = "https://github.com/LeopoldBriand/graph-node.git"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+aquamarine = "0.3.0" # graph in documentation
