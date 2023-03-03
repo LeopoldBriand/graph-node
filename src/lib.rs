@@ -59,3 +59,6 @@ pub mod graph;
 
 /// Phantom types for traits implementations
 pub mod types;
+
+/// A collection of usefull things to do with graphs
+pub mod utils;
