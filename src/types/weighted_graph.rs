@@ -9,7 +9,7 @@ pub trait Weighted<GraphType, T> where T: Clone{
     /// This function is the default implementation for weighted graph.
     /// It should return (first_node, (second_node_key, wheight_of_link)) with keys as String and wheight as f64
     fn build_edge(&self, node: Node<GraphType, T>, other_node_key: String) -> (String, (String, f64)) {
-        return (node.key, (other_node_key, 1.0)) 
+        (node.key, (other_node_key, 1.0)) 
     }
 }
 
@@ -87,30 +87,30 @@ struct UndirectedTestModel {
 }
 impl UndirectedTestModel {
     pub fn new(city_name: String, connected_cities: Vec<(String, f64)>) -> UndirectedTestModel {
-        return UndirectedTestModel { city_name, connected_cities }
+        UndirectedTestModel { city_name, connected_cities }
     }
 }
 
 impl UndirectedGraphBuilder for UndirectedTestModel {
     fn build_neighbour_keys(&self) -> Vec<String> {
-        return self.connected_cities.clone()
+        self.connected_cities.clone()
             .into_iter()
             .map(|city| city.0)
-            .collect();
+            .collect()
     }
     fn build_node_key(&self) -> String {
-        return self.city_name.clone();
+        self.city_name.clone()
     }
 }
 
 #[allow(dead_code)]
 fn undirected_test_collection() -> Vec<UndirectedTestModel> {
-    let mut collection = Vec::new();
-    collection.push(UndirectedTestModel::new("Paris".to_string(), vec![("Berlin".to_string(),1054.3), ("Brest".to_string(),591.2)]));
-    collection.push(UndirectedTestModel::new("Berlin".to_string(), vec![("Paris".to_string(), 1054.3), ("Roma".to_string(),1502.1)]));
-    collection.push(UndirectedTestModel::new("Brest".to_string(), vec![("Paris".to_string(), 591.2)]));
-    collection.push(UndirectedTestModel::new("Roma".to_string(), vec![("Berlin".to_string(), 1502.1)]));
-    return collection;
+    vec![
+        UndirectedTestModel::new("Paris".to_string(), vec![("Berlin".to_string(),1054.3), ("Brest".to_string(),591.2)]),
+        UndirectedTestModel::new("Berlin".to_string(), vec![("Paris".to_string(), 1054.3), ("Roma".to_string(),1502.1)]),
+        UndirectedTestModel::new("Brest".to_string(), vec![("Paris".to_string(), 591.2)]),
+        UndirectedTestModel::new("Roma".to_string(), vec![("Berlin".to_string(), 1502.1)]),
+    ]
 }
 
 #[test]

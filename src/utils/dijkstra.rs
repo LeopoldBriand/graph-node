@@ -97,7 +97,7 @@ impl Dijkstra {
     pub fn search<GraphType, T: Clone>(g: Graph<GraphType, T>, origin_key: String, dest_key: String) -> Option<Path>
     where Graph<GraphType, T>: Weighted<GraphType, T> {
         let mut instance = Dijkstra {paths: vec![Path{nodes: vec![origin_key.clone()], weight: 0.0}]};
-        return instance.dijkstra_recursive_search(origin_key, g.edges, instance.paths[0].clone(), dest_key);
+        instance.dijkstra_recursive_search(origin_key, g.edges, instance.paths[0].clone(), dest_key)
     }
     // Create recursive function
     fn dijkstra_recursive_search(&mut self, src_key: String, edges: Edges, path: Path, dest_key: String) -> Option<Path> {
@@ -105,7 +105,7 @@ impl Dijkstra {
         for edge in &edges[&src_key] {
             if edge.0 == &dest_key { // Shortest path found
                 return Some(path.new_path_with(edge.0, *edge.1));
-            } else if !path.nodes.contains(&edge.0) { // Node never been visited
+            } else if !path.nodes.contains(edge.0) { // Node never been visited
                 self.paths.push(path.new_path_with(edge.0, *edge.1));
             }
         }
@@ -115,9 +115,7 @@ impl Dijkstra {
             Some(path) => {
                 self.dijkstra_recursive_search(path.nodes.last().unwrap().clone(), edges, path,  dest_key)
             },
-            None => { // No more path to search on
-                return None;
-            }
+            None => None // No more path to search on
         }
     }
 }
@@ -131,9 +129,9 @@ pub struct Path {
     weight: f64,
 }
 impl Path {
-    fn new_path_with(&self, key: &String, weight: f64) -> Path {
+    fn new_path_with(&self, key: &str, weight: f64) -> Path {
         let mut nodes = self.nodes.clone();
-        nodes.push(key.clone());
+        nodes.push(key.to_owned());
         Path {nodes, weight: self.weight + weight}
     }
 }
@@ -150,33 +148,33 @@ struct UndirectedTestModel {
 }
 impl UndirectedTestModel {
     pub fn new(city_name: String, connected_cities: Vec<(String, f64)>) -> UndirectedTestModel {
-        return UndirectedTestModel { city_name, connected_cities }
+        UndirectedTestModel { city_name, connected_cities }
     }
 }
 
 impl UndirectedGraphBuilder for UndirectedTestModel {
     fn build_neighbour_keys(&self) -> Vec<String> {
-        return self.connected_cities.clone()
+        self.connected_cities.clone()
             .into_iter()
             .map(|city| city.0)
-            .collect();
+            .collect()
     }
     fn build_node_key(&self) -> String {
-        return self.city_name.clone();
+        self.city_name.clone()
     }
 }
 #[allow(dead_code)]
 fn undirected_test_collection() -> Vec<UndirectedTestModel> {
-    let mut collection = Vec::new();
-    collection.push(UndirectedTestModel::new("Paris".to_string(), vec![("Berlin".to_string(), 1054.0), ("Brest".to_string(), 591.0), ("Berne".to_string(), 572.0), ("Bruxelles".to_string(), 312.0)]));
-    collection.push(UndirectedTestModel::new("Berlin".to_string(), vec![("Paris".to_string(), 1054.0), ("Roma".to_string(), 1502.0)]));
-    collection.push(UndirectedTestModel::new("Brest".to_string(), vec![("Paris".to_string(), 591.0)]));
-    collection.push(UndirectedTestModel::new("Roma".to_string(), vec![("Berlin".to_string(), 1502.0), ("Berne".to_string(), 924.0), ("Wien".to_string(), 1122.0)]));
-    collection.push(UndirectedTestModel::new("Berne".to_string(), vec![("Paris".to_string(), 572.0), ("Wien".to_string(), 840.0), ("Roma".to_string(), 924.0)]));
-    collection.push(UndirectedTestModel::new("Wien".to_string(), vec![("Berne".to_string(), 840.0), ("Praha".to_string(), 333.0), ("Roma".to_string(), 1122.0)]));
-    collection.push(UndirectedTestModel::new("Bruxelles".to_string(), vec![("Praha".to_string(), 897.0), ("Paris".to_string(), 312.0)]));
-    collection.push(UndirectedTestModel::new("Praha".to_string(), vec![("Bruxelles".to_string(), 897.0), ("Wien".to_string(), 333.0)]));
-    return collection;
+    vec![
+        UndirectedTestModel::new("Paris".to_string(), vec![("Berlin".to_string(), 1054.0), ("Brest".to_string(), 591.0), ("Berne".to_string(), 572.0), ("Bruxelles".to_string(), 312.0)]),
+        UndirectedTestModel::new("Berlin".to_string(), vec![("Paris".to_string(), 1054.0), ("Roma".to_string(), 1502.0)]),
+        UndirectedTestModel::new("Brest".to_string(), vec![("Paris".to_string(), 591.0)]),
+        UndirectedTestModel::new("Roma".to_string(), vec![("Berlin".to_string(), 1502.0), ("Berne".to_string(), 924.0), ("Wien".to_string(), 1122.0)]),
+        UndirectedTestModel::new("Berne".to_string(), vec![("Paris".to_string(), 572.0), ("Wien".to_string(), 840.0), ("Roma".to_string(), 924.0)]),
+        UndirectedTestModel::new("Wien".to_string(), vec![("Berne".to_string(), 840.0), ("Praha".to_string(), 333.0), ("Roma".to_string(), 1122.0)]),
+        UndirectedTestModel::new("Bruxelles".to_string(), vec![("Praha".to_string(), 897.0), ("Paris".to_string(), 312.0)]),
+        UndirectedTestModel::new("Praha".to_string(), vec![("Bruxelles".to_string(), 897.0), ("Wien".to_string(), 333.0)]),
+    ]
 }
 
 #[test]

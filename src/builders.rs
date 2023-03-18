@@ -9,10 +9,10 @@
 /// }
 /// impl UndirectedGraphBuilder for TestModel {
 ///     fn build_neighbour_keys(&self) -> Vec<String> {
-///         return self.friends.clone();
+///         self.friends.clone()
 ///     }
 ///     fn build_node_key(&self) -> String {
-///         return self.name.clone();
+///         self.name.clone()
 ///     }
 /// }
 /// ```
@@ -35,13 +35,13 @@ pub trait UndirectedGraphBuilder {
 /// }
 /// impl DirectedGraphBuilder for TestModel {
 ///     fn build_child_key(&self) -> Vec<String> {
-///         return self.children.clone();
+///         self.children.clone()
 ///     }
 ///     fn build_node_key(&self) -> String {
-///         return self.name.clone();
+///         self.name.clone()
 ///     }
 ///     fn build_parent_key(&self) -> Vec<String> {
-///         return self.parents.clone();
+///         self.parents.clone()
 ///     }
 /// }
 /// ```

@@ -18,14 +18,14 @@ impl<T: UndirectedGraphBuilder + Clone> Graph<Undirected, T> {
         };
         graph.build_nodes(data);
         graph.check_circular_ref();
-        return graph;
+        graph
     }
     /// Get every nodes that are in a graph cycle.
     /// Warning: This return a copy of the nodes
     pub fn get_circular_nodes(&self) -> Vec<Node<Undirected, T>> {
         self.nodes
             .iter()
-            .filter(|node| node.is_in_circular_ref == true)
+            .filter(|node| node.is_in_circular_ref)
             .cloned()
             .collect()
     }
@@ -36,7 +36,7 @@ impl<T: UndirectedGraphBuilder + Clone> Graph<Undirected, T> {
             .iter()
             .filter(|node| {
                 if node.key == current_node.key {return false}
-                return node.get_neighbour_keys().contains(&node.key); 
+                node.get_neighbour_keys().contains(&node.key)
             })
             .collect()
     }
@@ -52,7 +52,7 @@ impl<T: UndirectedGraphBuilder + Clone> Graph<Undirected, T> {
         self.nodes = nodes;
     }
     fn check_circular_ref(&mut self) {
-        if self.nodes.len() == 0 {
+        if self.nodes.is_empty() {
             eprintln!("Graph has no nodes.");
         } else {
             let node = self.nodes[0].clone();
@@ -69,24 +69,16 @@ impl<T: UndirectedGraphBuilder + Clone> Graph<Undirected, T> {
                 return;
             }
             acc.push(key.clone());
-            match self.get_node_by_key(key) {
-                Some(node) => {
-                    let neighbours_to_visit: Vec<String> = node
-                    .get_neighbour_keys()
-                    .into_iter()
-                    .filter(|neighbour_key| {
-                        match node_keys.iter().find(|&node_key| node_key == neighbour_key) {
-                            Some(_) => false,
-                            None => true
-                        }
-                    })
-                    .collect();
-                    if neighbours_to_visit.len() > 0 {
-                        self.recurse_check( acc, neighbours_to_visit.clone());
-                    }
-                },
-                None => {
-
+            if let Some(node) = self.get_node_by_key(key) {
+                let neighbours_to_visit: Vec<String> = node
+                .get_neighbour_keys()
+                .into_iter()
+                .filter(|neighbour_key| {
+                    !node_keys.iter().any(|node_key| node_key == neighbour_key)
+                })
+                .collect();
+                if !neighbours_to_visit.is_empty() {
+                    self.recurse_check( acc, neighbours_to_visit.clone());
                 }
             }
         
@@ -106,33 +98,33 @@ struct TestModel {
 }
 impl TestModel {
     pub fn new(name: String, friends: Vec<String>) -> TestModel {
-        return TestModel { name, friends }
+        TestModel { name, friends }
     }
 }
 
 impl UndirectedGraphBuilder for TestModel {
     fn build_neighbour_keys(&self) -> Vec<String> {
-        return self.friends.clone();
+        self.friends.clone()
     }
     fn build_node_key(&self) -> String {
-        return self.name.clone();
+        self.name.clone()
     }
 }
 #[allow(dead_code)]
 fn test_collection() -> Vec<TestModel> {
-    let mut collection = Vec::new();
-    collection.push(TestModel::new("name1".to_string(), vec!["name2".to_string(), "name3".to_string()]));
-    collection.push(TestModel::new("name2".to_string(), vec!["name1".to_string(), "name4".to_string()]));
-    collection.push(TestModel::new("name3".to_string(), vec!["name1".to_string()]));
-    collection.push(TestModel::new("name4".to_string(), vec!["name2".to_string()]));
-    return collection;
+    vec![
+        TestModel::new("name1".to_string(), vec!["name2".to_string(), "name3".to_string()]),
+        TestModel::new("name2".to_string(), vec!["name1".to_string(), "name4".to_string()]),
+        TestModel::new("name3".to_string(), vec!["name1".to_string()]),
+        TestModel::new("name4".to_string(), vec!["name2".to_string()]),
+    ]
 }
 #[allow(dead_code)]
 fn test_collection_with_duplicated_key() -> Vec<TestModel> {
-    let mut collection = Vec::new();
-    collection.push(TestModel::new("name1".to_string(), vec!["name2".to_string(), "name3".to_string()]));
-    collection.push(TestModel::new("name1".to_string(), vec!["name3".to_string()]));
-    return collection;
+    vec![
+        TestModel::new("name1".to_string(), vec!["name2".to_string(), "name3".to_string()]),
+        TestModel::new("name1".to_string(), vec!["name3".to_string()]),
+    ]
 }
 #[test]
 fn basic_graph() {

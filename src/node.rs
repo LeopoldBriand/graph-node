@@ -34,7 +34,7 @@ impl<T> Node<Undirected, T> where T: UndirectedGraphBuilder + Clone {
         let links: HashMap<String, LinksDirection> = data
             .build_neighbour_keys()
             .into_iter()
-            .map(|el| (el.clone(), LinksDirection::Both))
+            .map(|el| (el, LinksDirection::Both))
             .collect();
         Node { 
             data, 
@@ -58,12 +58,12 @@ impl<T> Node<Directed, T> where T: DirectedGraphBuilder + Clone {
         let parents_keys: HashMap<String, LinksDirection> = data
             .build_parent_key()
             .into_iter()
-            .map(|el| (el.clone(), LinksDirection::From))
+            .map(|el| (el, LinksDirection::From))
             .collect();
         let child_keys: HashMap<String, LinksDirection> = data
             .build_child_key()
             .into_iter()
-            .map(|el| (el.clone(), LinksDirection::To))
+            .map(|el| (el, LinksDirection::To))
             .collect();
         let links = parents_keys.into_iter().chain(child_keys).collect();
         Node { 
@@ -100,10 +100,10 @@ impl<T> Node<Directed, T> where T: DirectedGraphBuilder + Clone {
     }
     /// Return a true if the node has one parent ore more
     pub fn has_parents(&self) -> bool {
-        return self.get_parent_keys().len() > 0;
+        !self.get_parent_keys().is_empty()
     }
     /// Return a true if the node has one child ore more
     pub fn has_children(&self) -> bool {
-        return self.get_child_keys().len() > 0;
+        !self.get_child_keys().is_empty()
     }
 }

@@ -18,20 +18,20 @@ impl<T: DirectedGraphBuilder + Clone> Graph<Directed, T> {
         };
         graph.build_nodes(data);
         graph.build_relationship();
-        if graph.get_root_nodes().len() == 0 && graph.nodes.len() > 0 {
+        if graph.get_root_nodes().is_empty() && !graph.nodes.is_empty() {
             eprintln!("Graph has no root nodes and could have circular reference but cannot determine where.");
             graph.has_circular_ref = true;
         } else {
             graph.check_circular_ref();
         }
-        return graph;
+        graph
     }
     /// Get all nodes that have no parents. 
     /// Warning: This return a copy of the nodes
     pub fn get_root_nodes(&self) -> Vec<&Node<Directed, T>> {
         self.nodes
             .iter()
-            .filter(|node| node.has_parents() == false)
+            .filter(|node| !node.has_parents())
             .collect()
     }
     /// Get all nodes that have no children.
@@ -39,7 +39,7 @@ impl<T: DirectedGraphBuilder + Clone> Graph<Directed, T> {
     pub fn get_leaf_nodes(&self) -> Vec<&Node<Directed, T>> {
         self.nodes
             .iter()
-            .filter(|node| node.has_children() == false)
+            .filter(|node| !node.has_children())
             .collect()
     }
     /// Get every nodes that match a common parent of a given node.
@@ -58,7 +58,7 @@ impl<T: DirectedGraphBuilder + Clone> Graph<Directed, T> {
     pub fn get_circular_nodes(&self) -> Vec<&Node<Directed, T>> {
         self.nodes
             .iter()
-            .filter(|node| node.is_in_circular_ref == true)
+            .filter(|node| node.is_in_circular_ref)
             .collect()
     }
     /// Get every parents of a given node.
@@ -68,7 +68,7 @@ impl<T: DirectedGraphBuilder + Clone> Graph<Directed, T> {
             .iter()
             .filter(|node| {
                 if node.key == current_node.key {return false}
-                return current_node.get_parent_keys().contains(&node.key)
+                current_node.get_parent_keys().contains(&node.key)
             })
             .collect()
     }
@@ -79,7 +79,7 @@ impl<T: DirectedGraphBuilder + Clone> Graph<Directed, T> {
             .iter()
             .filter(|node| {
                 if node.key == current_node.key {return false}
-                return current_node.get_child_keys().contains(&node.key)
+                current_node.get_child_keys().contains(&node.key)
             })
             .collect()
     }
@@ -121,22 +121,17 @@ impl<T: DirectedGraphBuilder + Clone> Graph<Directed, T> {
     fn recurse_check(&mut self, node_keys: Vec<String>, accumulator: Vec<String>) {
         for key in node_keys {
             let mut acc = accumulator.clone();
-            match self.get_node_by_key(key.clone()) {
-                Some(node) => {
-                    if acc.contains(&key) {
-                        let mut new_node = node.clone();
-                        new_node.is_in_circular_ref = true;
-                        self.update_node_by_key(key, new_node);
-                        self.has_circular_ref = true;
-                        return;
-                    }
-                    acc.push(key.clone());
-                    if node.has_children() {
-                        self.recurse_check(node.get_child_keys(), acc);
-                    }
+            if let Some(node) = self.get_node_by_key(key.clone()) {
+                if acc.contains(&key) {
+                    let mut new_node = node.clone();
+                    new_node.is_in_circular_ref = true;
+                    self.update_node_by_key(key, new_node);
+                    self.has_circular_ref = true;
+                    return;
                 }
-                None => {
-                    //todo!(" Handle node not found error here")
+                acc.push(key.clone());
+                if node.has_children() {
+                    self.recurse_check(node.get_child_keys(), acc);
                 }
             };
         }
@@ -155,75 +150,75 @@ struct TestModel {
 }
 impl TestModel {
     pub fn new(name: String, children: Vec<String>, parents: Vec<String>) -> TestModel {
-        return TestModel { name, children, parents }
+        TestModel { name, children, parents }
     }
 }
 
 impl DirectedGraphBuilder for TestModel {
     fn build_child_key(&self) -> Vec<String> {
-        return self.children.clone();
+        self.children.clone()
     }
     fn build_node_key(&self) -> String {
-        return self.name.clone();
+        self.name.clone()
     }
     fn build_parent_key(&self) -> Vec<String> {
-        return self.parents.clone();
+        self.parents.clone()
     }
 }
 #[allow(dead_code)]
 fn test_collection() -> Vec<TestModel> {
-    let mut collection = Vec::new();
-    collection.push(TestModel::new("name1".to_string(), vec!["name2".to_string(), "name3".to_string()], vec![]));
-    collection.push(TestModel::new("name2".to_string(), vec!["name3".to_string()], vec!["name1".to_string()]));
-    collection.push(TestModel::new("name3".to_string(), vec!["name4".to_string()], vec!["name2".to_string(), "name1".to_string()]));
-    collection.push(TestModel::new("name4".to_string(), vec![], vec!["name3".to_string()]));
-    return collection;
+    vec![
+        TestModel::new("name1".to_string(), vec!["name2".to_string(), "name3".to_string()], vec![]),
+        TestModel::new("name2".to_string(), vec!["name3".to_string()], vec!["name1".to_string()]),
+        TestModel::new("name3".to_string(), vec!["name4".to_string()], vec!["name2".to_string(), "name1".to_string()]),
+        TestModel::new("name4".to_string(), vec![], vec!["name3".to_string()]),
+    ]
 }
 #[allow(dead_code)]
 fn test_collection_with_duplicated_key() -> Vec<TestModel> {
-    let mut collection = Vec::new();
-    collection.push(TestModel::new("name1".to_string(), vec!["name2".to_string(), "name3".to_string()], vec![]));
-    collection.push(TestModel::new("name1".to_string(), vec!["name3".to_string()], vec![]));
-    return collection;
+    vec![
+        TestModel::new("name1".to_string(), vec!["name2".to_string(), "name3".to_string()], vec![]),
+        TestModel::new("name1".to_string(), vec!["name3".to_string()], vec![]),
+    ]
 }
 
 #[allow(dead_code)]
 fn test_collection_without_parent_key() -> Vec<TestModel> {
-    let mut collection = Vec::new();
-    collection.push(TestModel::new("name1".to_string(), vec!["name2".to_string(), "name3".to_string()], vec![]));
-    collection.push(TestModel::new("name2".to_string(), vec!["name3".to_string()], vec![]));
-    collection.push(TestModel::new("name3".to_string(), vec!["name4".to_string()], vec![]));
-    collection.push(TestModel::new("name4".to_string(), vec![], vec![]));
-    return collection;
+    vec![
+        TestModel::new("name1".to_string(), vec!["name2".to_string(), "name3".to_string()], vec![]),
+        TestModel::new("name2".to_string(), vec!["name3".to_string()], vec![]),
+        TestModel::new("name3".to_string(), vec!["name4".to_string()], vec![]),
+        TestModel::new("name4".to_string(), vec![], vec![]),
+    ]
 }
 
 #[allow(dead_code)]
 fn test_collection_without_child_key() -> Vec<TestModel> {
-    let mut collection = Vec::new();
-    collection.push(TestModel::new("name1".to_string(), vec![], vec![]));
-    collection.push(TestModel::new("name2".to_string(), vec![], vec!["name1".to_string()]));
-    collection.push(TestModel::new("name3".to_string(), vec![], vec!["name2".to_string(), "name1".to_string()]));
-    collection.push(TestModel::new("name4".to_string(), vec![], vec!["name3".to_string()]));
-    return collection;
+    vec![
+        TestModel::new("name1".to_string(), vec![], vec![]),
+        TestModel::new("name2".to_string(), vec![], vec!["name1".to_string()]),
+        TestModel::new("name3".to_string(), vec![], vec!["name2".to_string(), "name1".to_string()]),
+        TestModel::new("name4".to_string(), vec![], vec!["name3".to_string()]),
+    ]
 }
 
 #[allow(dead_code)]
 fn test_collection_with_circular_references_without_root_nodes() -> Vec<TestModel> {
-    let mut collection = Vec::new();
-    collection.push(TestModel::new("name1".to_string(), vec!["name2".to_string(), "name3".to_string()], vec![]));
-    collection.push(TestModel::new("name2".to_string(), vec!["name3".to_string()], vec![]));
-    collection.push(TestModel::new("name3".to_string(), vec!["name4".to_string()], vec![]));
-    collection.push(TestModel::new("name4".to_string(), vec!["name1".to_string()], vec![]));
-    return collection;
+    vec![
+        TestModel::new("name1".to_string(), vec!["name2".to_string(), "name3".to_string()], vec![]),
+        TestModel::new("name2".to_string(), vec!["name3".to_string()], vec![]),
+        TestModel::new("name3".to_string(), vec!["name4".to_string()], vec![]),
+        TestModel::new("name4".to_string(), vec!["name1".to_string()], vec![]),
+    ]
 }
 #[allow(dead_code)]
 fn test_collection_with_circular_references_with_root_nodes() -> Vec<TestModel> {
-    let mut collection = Vec::new();
-    collection.push(TestModel::new("name1".to_string(), vec!["name2".to_string(), "name3".to_string()], vec![]));
-    collection.push(TestModel::new("name2".to_string(), vec!["name3".to_string()], vec![]));
-    collection.push(TestModel::new("name3".to_string(), vec!["name4".to_string()], vec![]));
-    collection.push(TestModel::new("name4".to_string(), vec!["name2".to_string()], vec![]));
-    return collection;
+    vec![
+        TestModel::new("name1".to_string(), vec!["name2".to_string(), "name3".to_string()], vec![]),
+        TestModel::new("name2".to_string(), vec!["name3".to_string()], vec![]),
+        TestModel::new("name3".to_string(), vec!["name4".to_string()], vec![]),
+        TestModel::new("name4".to_string(), vec!["name2".to_string()], vec![]),
+    ]
 }
 
 #[test]
