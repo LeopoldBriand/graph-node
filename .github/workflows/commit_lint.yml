@@ -1,0 +1,26 @@
+name: Run commitlint
+on:
+  workflow_dispatch:
+  pull_request:
+jobs:
+  run-commitlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 14.x
+      - name: Cache dependencies
+        id: cache
+        uses: actions/cache@v2
+        with:
+          path: ./node_modules
+          key: modules-${{ hashFiles('package-lock.json') }}
+      - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: npm install @commitlint/config-conventional --saveDev
+      - name: Validate all commits from PR
+        run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --verbose
